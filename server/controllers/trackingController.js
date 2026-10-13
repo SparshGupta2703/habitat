@@ -26,7 +26,25 @@ export const analyzeFood = run(async (req) => {
   const start = new Date(Date.parse(`${date}T00:00:00.000Z`) + timezoneOffset * 60000); const end = new Date(start.getTime() + 86400000 - 1)
   const entries = await repo.listFood(req.id, start.toISOString(), end.toISOString())
   if (!entries.length) throw Object.assign(new Error('Add food entries for this day before analysing macros.'), { status: 400 })
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Estimate nutrition for these foods. Return only JSON with items array (name, quantity, calories, protein, carbohydrates, fats) and totals object (calories, protein, carbohydrates, fats). Values must be finite non-negative numbers. Foods: ${entries.map((entry) => entry.text).join('; ')}` }] }], generationConfig: { responseMimeType: 'application/json' } }) })
+  const nutritionSchema = {
+    type: 'object',
+    properties: {
+      entries: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            entryId: { type: 'string' }, name: { type: 'string' }, quantity: { type: 'string' },
+            calories: { type: 'number' }, protein: { type: 'number' }, carbohydrates: { type: 'number' }, fats: { type: 'number' },
+          },
+          required: ['entryId', 'name', 'quantity', 'calories', 'protein', 'carbohydrates', 'fats'],
+        },
+      },
+    },
+    required: ['entries'],
+  }
+  const inputEntries = entries.map((entry) => ({ entryId: String(entry._id), food: entry.text }))
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Estimate nutrition for every food log entry separately. Return exactly one result for every input entry, preserving its entryId verbatim. Do not combine entries. Estimate realistic portions when none are given and include units in quantity. Values must be finite non-negative numbers. Input entries: ${JSON.stringify(inputEntries)}` }] }], generationConfig: { responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: nutritionSchema } } } }) })
   if (!response.ok) {
     const providerBody = await response.json().catch(() => ({}))
     const providerMessage = providerBody.error?.message || `The nutrition provider returned HTTP ${response.status}.`
@@ -36,13 +54,21 @@ export const analyzeFood = run(async (req) => {
   const raw = await response.json()
   let analysis
   try { analysis = JSON.parse(raw.candidates?.[0]?.content?.parts?.[0]?.text || '') } catch { throw Object.assign(new Error('Nutrition service returned invalid data.'), { status: 502 }) }
-  const totals = analysis?.totals
+  const analyzedEntries = analysis?.entries
   const keys = ['calories', 'protein', 'carbohydrates', 'fats']
-  if (!Array.isArray(analysis.items) || !totals || keys.some((key) => !Number.isFinite(totals[key]) || totals[key] < 0) || analysis.items.some((item) => keys.some((key) => !Number.isFinite(item[key]) || item[key] < 0))) throw Object.assign(new Error('Nutrition service returned invalid values.'), { status: 502 })
-  // Store the daily aggregate on one row so the Insights totals remain available
-  // when a day contains more than one food entry.
-  if (entries.length) await repo.saveFoodAnalysis(req.id, entries[0]._id, { ...totals, items: analysis.items })
-  return { ...analysis, date, savedToEntry: entries.length > 0 }
+  const expectedIds = new Set(inputEntries.map((entry) => entry.entryId))
+  if (!Array.isArray(analyzedEntries) || analyzedEntries.length !== entries.length || analyzedEntries.some((item) => !expectedIds.has(item.entryId) || typeof item.name !== 'string' || typeof item.quantity !== 'string' || keys.some((key) => !Number.isFinite(item[key]) || item[key] < 0))) throw Object.assign(new Error('Nutrition service returned incomplete or invalid per-entry values. Try analysing these foods again.'), { status: 502 })
+  const byId = new Map(analyzedEntries.map((item) => [item.entryId, item]))
+  if (byId.size !== entries.length) throw Object.assign(new Error('Nutrition service returned duplicate food entries. Try analysing these foods again.'), { status: 502 })
+  const savedEntries = await Promise.all(entries.map(async (entry) => {
+    const item = byId.get(String(entry._id))
+    if (!item) throw Object.assign(new Error('Nutrition service missed a food entry. Try analysing these foods again.'), { status: 502 })
+    const analysisItem = { name: item.name, quantity: item.quantity, ...Object.fromEntries(keys.map((key) => [key, item[key]])) }
+    await repo.saveFoodAnalysis(req.id, entry._id, analysisItem)
+    return { entryId: String(entry._id), ...analysisItem }
+  }))
+  const totals = Object.fromEntries(keys.map((key) => [key, savedEntries.reduce((sum, item) => sum + item[key], 0)]))
+  return { entries: savedEntries, items: savedEntries, totals, date, savedToEntry: true }
 })
 
 export const analytics = run(async (req) => {
