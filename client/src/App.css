@@ -22,13 +22,14 @@
 
 /* Responsive layout corrections: keep decorative chrome out of content flow. */
 .experience[data-page="settings"] .planet-content,
+.experience[data-page="logs"] .planet-content,
 .experience[data-page="analysis"] .portal-wrap,
 .experience[data-page="logs"] .portal-wrap,
 .experience[data-page="settings"] .portal-wrap{display:none}
 
 @media(max-width:700px){
-  .experience[data-page="analysis"] .insight-screen{inset:auto;margin:104px 13px 20px;width:auto;max-height:none;overflow:visible;padding:0 0 30px}
-  .experience[data-page="logs"] .log-screen{max-height:none;margin-top:104px;margin-bottom:20px}
+  .experience[data-page="analysis"] .insight-screen{inset:auto;margin:176px 13px 20px;width:auto;max-height:none;overflow:visible;padding:0 0 30px}
+  .experience[data-page="logs"] .log-screen{max-height:none;margin-top:176px;margin-bottom:20px}
   .experience[data-page="settings"] .settings-screen{max-height:none;margin-top:104px;margin-bottom:20px;padding-top:0}
   .experience[data-page="home"] .planet-list{top:70px;animation:none;transform:none}
   .experience[data-page="home"] .portal-wrap{position:relative;left:auto;top:auto;transform:none;width:min(260px,68vw);margin:130px auto 20px}
@@ -45,4 +46,16 @@
   .experience[data-page="analysis"] .chart-area{min-width:0;width:100%;overflow:hidden}
   .experience[data-page="analysis"] .history-entry{grid-template-columns:minmax(70px,90px) minmax(0,1fr) 34px}
   .experience[data-page="settings"] .settings-screen{width:auto}
+  .experience .planet-list{animation:none;transform:none}
+  .experience[data-page="home"] .planet-list{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:auto;max-height:none;overflow:visible;display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0 19px 28px;padding:0;border:0;border-radius:0;background:transparent;backdrop-filter:none}
+  .experience[data-page="home"] .planet-list>.micro-label{display:block;margin:0 0 4px}
+  .experience[data-page="home"] .planet-list .ritual-row{width:100%;min-width:0;min-height:42px;padding:6px 0;border-bottom:1px solid #ffffff40}
+  .experience[data-page="home"] .planet-list .ritual-label{max-width:none}
+  .experience[data-page="home"] .planet-list .ritual-label small{display:block}
+  .experience[data-page="home"] .planet-list .create-ritual{margin-top:4px}
+  .experience[data-page="settings"] .settings-screen{margin-top:174px}
 }
+
+/* Keep navigation and the habit strip above the central orbital artwork and panels. */
+.experience .header{z-index:8}
+.experience .planet-list{z-index:7}
