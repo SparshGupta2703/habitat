@@ -9,7 +9,9 @@ import foodRoutes from './routes/foodRoutes.js'
 import habitRoutes from './routes/habitRoutes.js'
 import analyticsRoutes from './routes/analyticsRoutes.js'
 
-const dnsServers = (process.env.DNS_SERVERS || '8.8.8.8,8.8.4.4').split(',').map((server) => server.trim()).filter(Boolean)
+// Use the host's resolver by default (important on platforms like Render).
+// Override only when a custom resolver has been configured explicitly.
+const dnsServers = (process.env.DNS_SERVERS || '').split(',').map((server) => server.trim()).filter(Boolean)
 if (dnsServers.length) dns.setServers(dnsServers)
 
 const required = ['MONGO_URI', 'JWT_SECRET', 'PORT']
