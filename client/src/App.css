@@ -19,3 +19,30 @@
 
 .insight-intro{display:flex;justify-content:space-between;align-items:flex-end;text-align:left}.insight-intro .micro-label{margin-bottom:5px}.period-control{display:flex;gap:3px;padding:3px;border:1px solid #ffffff3a;border-radius:20px;background:#ffffff0b}.period-control button{border:0;border-radius:16px;background:transparent;color:#ffffffb4;padding:6px 10px;font-size:8px;letter-spacing:.08em;cursor:pointer}.period-control button.active{background:#fff;color:#101114}
 @media(max-width:700px){.insight-intro{align-items:center;gap:8px}.insight-intro h2{font-size:17px}.period-control{flex:0 0 auto}.period-control button{padding:6px 7px;font-size:7px}}
+
+/* Responsive layout corrections: keep decorative chrome out of content flow. */
+.experience[data-page="settings"] .planet-content,
+.experience[data-page="analysis"] .portal-wrap,
+.experience[data-page="logs"] .portal-wrap,
+.experience[data-page="settings"] .portal-wrap{display:none}
+
+@media(max-width:700px){
+  .experience[data-page="analysis"] .insight-screen{inset:auto;margin:104px 13px 20px;width:auto;max-height:none;overflow:visible;padding:0 0 30px}
+  .experience[data-page="logs"] .log-screen{max-height:none;margin-top:104px;margin-bottom:20px}
+  .experience[data-page="settings"] .settings-screen{max-height:none;margin-top:104px;margin-bottom:20px;padding-top:0}
+  .experience[data-page="home"] .planet-list{top:70px;animation:none;transform:none}
+  .experience[data-page="home"] .portal-wrap{position:relative;left:auto;top:auto;transform:none;width:min(260px,68vw);margin:130px auto 20px}
+  .experience[data-page="home"] .portal{aspect-ratio:1/1}
+  .experience[data-page="home"] .planet-content{position:relative;left:auto;right:auto;bottom:auto;margin:0 19px 28px;display:block}
+  .experience[data-page="home"] .planet-title-group h1{font-size:clamp(58px,17vw,88px);line-height:.88;overflow-wrap:anywhere}
+  .experience[data-page="home"] .planet-facts{margin-top:16px}
+  .experience[data-page="home"] .space-footer{display:none}
+  .experience[data-page="analysis"] .insight-intro{align-items:flex-start;flex-wrap:wrap}
+  .experience[data-page="analysis"] .insight-intro>div:first-child{min-width:0;flex:1 1 170px}
+  .experience[data-page="analysis"] .period-control{max-width:100%;flex-wrap:wrap}
+  .experience[data-page="analysis"] .macro-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .experience[data-page="analysis"] .graph-panel{min-width:0;overflow:hidden}
+  .experience[data-page="analysis"] .chart-area{min-width:0;width:100%;overflow:hidden}
+  .experience[data-page="analysis"] .history-entry{grid-template-columns:minmax(70px,90px) minmax(0,1fr) 34px}
+  .experience[data-page="settings"] .settings-screen{width:auto}
+}
