@@ -13,5 +13,5 @@ export const findUserByIdWithPassword=async(userId)=>{
         return await User.findById(userId)
 }
 export const findUserByIdAndUpdate=async(userId,updates)=>{
-    return await User.findByIdAndUpdate(userId,updates,{new:true}).select('-password')
+    return await User.findByIdAndUpdate(userId,updates,{returnDocument:'after'}).select('-password')
 }
