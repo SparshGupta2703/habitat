@@ -29,7 +29,19 @@ if (invalid.length) {
 }
 
 const app = express()
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
+const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without an Origin header (for example health checks) are allowed.
+    if (!origin) return callback(null, true)
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+    const isVercel = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$/i.test(origin)
+    callback(null, isLocal || isVercel || allowedOrigins.includes(origin))
+  },
+}))
 app.use(express.json({ limit: '1mb' }))
 app.get('/api/health', (_req, res) => res.json({ success: true }))
 app.use('/api/auth', authRoutes)

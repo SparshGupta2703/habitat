@@ -3,7 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import SpaceExperience from './SpaceExperience.jsx'
 import './App.css'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+const defaultApi = localHost
+  ? 'http://localhost:5000/api'
+  : 'https://habitat-3qab.onrender.com/api'
+const API = (import.meta.env.VITE_API_URL || defaultApi).replace(/\/$/, '')
 const dateKey = (value) => { const date = new Date(value); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 const today = () => dateKey(new Date())
 const currentDateTimeLocal = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
