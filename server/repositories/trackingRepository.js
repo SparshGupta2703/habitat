@@ -9,17 +9,22 @@ export const createSleep = (data) => SleepSession.create({ ...data, active: true
 export const updateSleep = (userId, id, data) => SleepSession.findOneAndUpdate({ _id: id, userId }, { ...data, ...(data.wakeTime ? { active: false } : {}) }, { returnDocument: 'after', runValidators: true })
 export const deleteSleep = (userId, id) => SleepSession.findOneAndDelete({ _id: id, userId })
 export const listFood = (userId, from, to) => FoodEntry.find({ userId, ...(from || to ? { eatenAt: { ...(from ? { $gte: new Date(from) } : {}), ...(to ? { $lte: new Date(to) } : {}) } } : {}) }).sort({ eatenAt: -1 })
-export const createFood = (data) => FoodEntry.create(data)
+export const listFoodForDate = (userId, date, start, endExclusive) => FoodEntry.find({ userId, $or: [{ localDate: date }, { localDate: { $exists: false }, eatenAt: { $gte: start, $lt: endExclusive } }] }).sort({ eatenAt: 1 })
+export const createFood = (data) => FoodEntry.create({ ...data, analysisStatus: 'pending' })
 export const updateFood = (userId, id, data) => {
-  const { analysis, ...fields } = data
+  const { analysis, analysisStatus, analysisError, ...fields } = data
   const update = { $set: fields }
   if (analysis) update.$set.analysis = analysis
-  else update.$unset = { analysis: 1 }
+  if (analysisStatus) update.$set.analysisStatus = analysisStatus
+  if (analysisStatus === 'pending') update.$unset = { analysis: 1, analysisError: 1 }
+  else if (analysisError !== undefined) analysisError ? update.$set.analysisError = analysisError : update.$unset = { analysisError: 1 }
   return FoodEntry.findOneAndUpdate({ _id: id, userId }, update, { returnDocument: 'after', runValidators: true })
 }
 export const deleteFood = (userId, id) => FoodEntry.findOneAndDelete({ _id: id, userId })
 export const findFood = (userId, ids) => FoodEntry.find({ userId, _id: { $in: ids } })
-export const saveFoodAnalysis = (userId, id, analysis) => FoodEntry.findOneAndUpdate({ _id: id, userId }, { analysis }, { returnDocument: 'after' })
+export const saveFoodAnalysis = (userId, id, analysis) => FoodEntry.findOneAndUpdate({ _id: id, userId }, { $set: { analysis, analysisStatus: 'analyzed' }, $unset: { analysisError: 1 } }, { returnDocument: 'after' })
+export const markFoodAnalysisFailed = (userId, ids, error) => FoodEntry.updateMany({ userId, _id: { $in: ids }, analysisStatus: { $ne: 'analyzed' } }, { $set: { analysisStatus: 'failed', analysisError: error } })
+export const markFoodAnalysisPending = (userId, ids) => FoodEntry.updateMany({ userId, _id: { $in: ids }, analysisStatus: { $ne: 'analyzed' } }, { $set: { analysisStatus: 'pending' }, $unset: { analysisError: 1 } })
 export const listHabits = (userId, includeArchived = false) => Habit.find({ userId, ...(includeArchived ? {} : { archived: false }) }).sort({ createdAt: 1 })
 export const createHabit = (data) => Habit.create(data)
 export const updateHabit = (userId, id, data) => Habit.findOneAndUpdate({ _id: id, userId }, data, { returnDocument: 'after', runValidators: true })

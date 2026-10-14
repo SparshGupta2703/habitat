@@ -1,6 +1,7 @@
 import { createUser, findUserByEmail } from "../repositories/userRepository.js"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
 
 
 export const signupUser = async ({ name, email, password }) => {
@@ -18,7 +19,8 @@ export const signupUser = async ({ name, email, password }) => {
     const newUser = await createUser({
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        role: 'user',
     });
 
     const token = jwt.sign(
@@ -33,6 +35,8 @@ export const signupUser = async ({ name, email, password }) => {
             userId: newUser._id,
             userEmail: newUser.email,
             userName: newUser.name,
+            role: newUser.role,
+            mustChangePassword: newUser.mustChangePassword,
             userImg: newUser.profileImg,
             userDesc: newUser.UserDesc
         }
@@ -55,10 +59,22 @@ export const loginUser=async({email,password})=>{
             userId:user._id,
             userEmail:user.email,
             userName:user.name,
+        role:user.role || 'user',
+        mustChangePassword:Boolean(user.mustChangePassword),
             userImg:user.profileImg,
             userDesc:user.UserDesc
         }}
 
     
    
+}
+
+export async function completeAdminSetup(userId, password) {
+    if (typeof password !== 'string' || password.length < 8 || password.length > 128) throw Object.assign(new Error('Choose a password between 8 and 128 characters.'), { status: 400 })
+    const user = await User.findById(userId)
+    if (!user || user.role !== 'admin' || !user.mustChangePassword) throw Object.assign(new Error('No initial administrator password change is pending.'), { status: 403 })
+    user.password = await bcrypt.hash(password, 10)
+    user.mustChangePassword = false
+    await user.save()
+    return { userId: user._id, userEmail: user.email, userName: user.name, role: user.role, mustChangePassword: false }
 }

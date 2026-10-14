@@ -1,5 +1,9 @@
 import * as service from '../services/trackingService.js'
 import * as repo from '../repositories/trackingRepository.js'
+import { analyzeNutrition } from '../services/ai/aiProviderService.js'
+import { validateNutritionEntries } from '../services/ai/nutritionSchema.js'
+import { dateRangeForDate, dateRangeForDays, localDateKey, normalizeTimeZone } from '../services/dateService.js'
+import { buildDailyAnalytics } from '../services/analyticsService.js'
 
 const run = (handler, status = 200) => async (req, res, next) => {
   try { res.status(status).json({ success: true, data: await handler(req) }) } catch (error) { next(error) }
@@ -20,74 +24,52 @@ export const habitHistory = run((req) => service.getHabitHistory(req.id, req.que
 export const setHabitLog = run((req) => service.logHabit(req.id, req.params.id, req.body))
 
 export const analyzeFood = run(async (req) => {
-  if (!process.env.GEMINI_API_KEY) throw Object.assign(new Error('Macro analysis is unavailable until GEMINI_API_KEY is configured in server/.env.'), { status: 503 })
-  const date = req.body.date || new Date().toISOString().slice(0, 10)
-  const timezoneOffset = Number.isFinite(Number(req.body.timezoneOffset)) ? Math.max(-840, Math.min(840, Number(req.body.timezoneOffset))) : 0
-  const start = new Date(Date.parse(`${date}T00:00:00.000Z`) + timezoneOffset * 60000); const end = new Date(start.getTime() + 86400000 - 1)
-  const entries = await repo.listFood(req.id, start.toISOString(), end.toISOString())
-  if (!entries.length) throw Object.assign(new Error('Add food entries for this day before analysing macros.'), { status: 400 })
-  const nutritionSchema = {
-    type: 'object',
-    properties: {
-      entries: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            entryId: { type: 'string' }, name: { type: 'string' }, quantity: { type: 'string' },
-            calories: { type: 'number' }, protein: { type: 'number' }, carbohydrates: { type: 'number' }, fats: { type: 'number' },
-          },
-          required: ['entryId', 'name', 'quantity', 'calories', 'protein', 'carbohydrates', 'fats'],
-        },
-      },
-    },
-    required: ['entries'],
+  const timeZone = normalizeTimeZone(req.body.timeZone)
+  const date = req.body.date || localDateKey(new Date(), timeZone)
+  const range = dateRangeForDate(date, timeZone)
+  const allEntries = await repo.listFoodForDate(req.id, date, range.start, range.endExclusive)
+  if (!allEntries.length) throw Object.assign(new Error('Add food entries for this day before analysing macros.'), { status: 400 })
+  const requestedIds = Array.isArray(req.body.entryIds) ? new Set(req.body.entryIds.map(String)) : null
+  const entries = allEntries.filter((entry) => (!requestedIds || requestedIds.has(String(entry._id))) && !(entry.analysis && (entry.analysisStatus === 'analyzed' || !entry.analysisStatus)))
+  if (requestedIds && [...requestedIds].some((id) => !allEntries.some((entry) => String(entry._id) === id))) throw Object.assign(new Error('One or more selected food entries were not found for this date.'), { status: 404 })
+  if (requestedIds && requestedIds.size !== entries.length && entries.length === 0 && !allEntries.some((entry) => requestedIds.has(String(entry._id)))) throw Object.assign(new Error('No food entries were selected for analysis.'), { status: 400 })
+  let provider = null
+  if (entries.length) {
+    const input = entries.map((entry) => ({ entryId: String(entry._id), food: entry.text }))
+    await repo.markFoodAnalysisPending(req.id, entries.map((entry) => entry._id))
+    try {
+      const response = await analyzeNutrition(input)
+      provider = response.provider
+      const issue = validateNutritionEntries(response.result, input.map((entry) => entry.entryId))
+      if (issue) throw Object.assign(new Error('The nutrition provider returned incomplete or invalid data. The entries were kept; retry analysis.'), { status: 502, kind: 'invalid-response' })
+      const byId = new Map(response.result.entries.map((item) => [item.entryId, item]))
+      await Promise.all(entries.map((entry) => {
+        const item = byId.get(String(entry._id))
+        return repo.saveFoodAnalysis(req.id, entry._id, { name: item.name.trim(), quantity: item.quantity.trim(), ...Object.fromEntries(['calories', 'protein', 'carbohydrates', 'fats'].map((key) => [key, item[key]])) })
+      }))
+    } catch (error) {
+      const publicError = error.message || 'Nutrition analysis failed. The food entries were kept; retry analysis.'
+      await repo.markFoodAnalysisFailed(req.id, entries.map((entry) => entry._id), publicError.slice(0, 240))
+      throw error
+    }
   }
-  const inputEntries = entries.map((entry) => ({ entryId: String(entry._id), food: entry.text }))
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Estimate nutrition for every food log entry separately. Return exactly one result for every input entry, preserving its entryId verbatim. Do not combine entries. Estimate realistic portions when none are given and include units in quantity. Values must be finite non-negative numbers. Input entries: ${JSON.stringify(inputEntries)}` }] }], generationConfig: { responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: nutritionSchema } } } }) })
-  if (!response.ok) {
-    const providerBody = await response.json().catch(() => ({}))
-    const providerMessage = providerBody.error?.message || `The nutrition provider returned HTTP ${response.status}.`
-    console.error(`Gemini nutrition request failed (${response.status}): ${providerMessage}`)
-    throw Object.assign(new Error(`Gemini could not analyse this food: ${providerMessage}`), { status: 502 })
-  }
-  const raw = await response.json()
-  let analysis
-  try { analysis = JSON.parse(raw.candidates?.[0]?.content?.parts?.[0]?.text || '') } catch { throw Object.assign(new Error('Nutrition service returned invalid data.'), { status: 502 }) }
-  const analyzedEntries = analysis?.entries
+  const refreshed = await repo.listFoodForDate(req.id, date, range.start, range.endExclusive)
+  const analyzed = refreshed.filter((entry) => entry.analysis && (entry.analysisStatus === 'analyzed' || !entry.analysisStatus))
   const keys = ['calories', 'protein', 'carbohydrates', 'fats']
-  const expectedIds = new Set(inputEntries.map((entry) => entry.entryId))
-  if (!Array.isArray(analyzedEntries) || analyzedEntries.length !== entries.length || analyzedEntries.some((item) => !expectedIds.has(item.entryId) || typeof item.name !== 'string' || typeof item.quantity !== 'string' || keys.some((key) => !Number.isFinite(item[key]) || item[key] < 0))) throw Object.assign(new Error('Nutrition service returned incomplete or invalid per-entry values. Try analysing these foods again.'), { status: 502 })
-  const byId = new Map(analyzedEntries.map((item) => [item.entryId, item]))
-  if (byId.size !== entries.length) throw Object.assign(new Error('Nutrition service returned duplicate food entries. Try analysing these foods again.'), { status: 502 })
-  const savedEntries = await Promise.all(entries.map(async (entry) => {
-    const item = byId.get(String(entry._id))
-    if (!item) throw Object.assign(new Error('Nutrition service missed a food entry. Try analysing these foods again.'), { status: 502 })
-    const analysisItem = { name: item.name, quantity: item.quantity, ...Object.fromEntries(keys.map((key) => [key, item[key]])) }
-    await repo.saveFoodAnalysis(req.id, entry._id, analysisItem)
-    return { entryId: String(entry._id), ...analysisItem }
-  }))
-  const totals = Object.fromEntries(keys.map((key) => [key, savedEntries.reduce((sum, item) => sum + item[key], 0)]))
-  return { entries: savedEntries, items: savedEntries, totals, date, savedToEntry: true }
+  const totals = Object.fromEntries(keys.map((key) => [key, analyzed.reduce((sum, entry) => sum + Number(entry.analysis[key] || 0), 0)]))
+  return { entries: refreshed, items: analyzed.map((entry) => ({ entryId: String(entry._id), ...entry.analysis })), totals, date, provider, savedToEntry: true }
 })
 
 export const analytics = run(async (req) => {
-  const days = Math.min(3650, Math.max(1, Number(req.query.days) || 365))
-  const timezoneOffset = Number.isFinite(Number(req.query.timezoneOffset)) ? Math.max(-840, Math.min(840, Number(req.query.timezoneOffset))) : 0
-  const endDayKey = new Date(Date.now() - timezoneOffset * 60000).toISOString().slice(0, 10)
-  const endLocalMidnight = Date.parse(`${endDayKey}T00:00:00.000Z`)
-  const startLocalMidnight = endLocalMidnight - (days - 1) * 86400000
-  const start = new Date(startLocalMidnight + timezoneOffset * 60000)
-  const end = new Date(endLocalMidnight + timezoneOffset * 60000 + 86400000 - 1)
-  const startDayKey = new Date(startLocalMidnight).toISOString().slice(0, 10)
-  const endDateKey = new Date(endLocalMidnight).toISOString().slice(0, 10)
-  const [sleep, food, habits, logs] = await Promise.all([repo.listSleep(req.id, start.toISOString(), end.toISOString()), repo.listFood(req.id, start.toISOString(), end.toISOString()), repo.listHabits(req.id), repo.listHabitLogs(req.id, startDayKey, endDateKey)])
-  const byDay = new Map()
-  for (let i = 0; i < days; i++) { const day = new Date(startLocalMidnight + i * 86400000).toISOString().slice(0, 10); byDay.set(day, { date: day, sleepHours: 0, calories: 0, protein: 0, carbohydrates: 0, fats: 0, habitsCompleted: 0, habitsTotal: habits.length }) }
-  const localDateKey = (value) => new Date(new Date(value).getTime() - timezoneOffset * 60000).toISOString().slice(0, 10)
-  sleep.forEach((session) => { if (session.bedtime && session.wakeTime) { const key = localDateKey(session.wakeTime); const row = byDay.get(key); if (row) row.sleepHours += Math.max(0, (new Date(session.wakeTime) - new Date(session.bedtime)) / 3600000) } })
-  food.forEach((entry) => { const row = byDay.get(localDateKey(entry.eatenAt)); if (row && entry.analysis) ['calories', 'protein', 'carbohydrates', 'fats'].forEach((key) => { row[key] += entry.analysis[key] || 0 }) })
-  logs.forEach((entry) => { const row = byDay.get(entry.date); if (row) row.habitsCompleted++ })
-  const series = [...byDay.values()].map((row) => ({ ...row, sleepHours: Math.round(row.sleepHours * 10) / 10, habitRate: row.habitsTotal ? Math.round(row.habitsCompleted / row.habitsTotal * 100) : 0 }))
-  return { days, series, habits: habits.map((habit) => ({ id: habit._id, name: habit.name, trackTimestamp: habit.trackTimestamp, trackQuantity: habit.trackQuantity, quantityType: habit.quantityType, quantityUnit: habit.quantityUnit, history: series.map((day) => { const log = logs.find((entry) => String(entry.habitId) === String(habit._id) && entry.date === day.date); return { date: day.date, completed: Boolean(log), quantity: log?.quantityValue ?? (log ? 1 : 0), timestamp: log?.timestamp || null } }) })) }
+  const timeZone = normalizeTimeZone(req.query.timeZone)
+  const range = dateRangeForDays(req.query.days, timeZone)
+  const beforeEnd = new Date(range.endExclusive.getTime() - 1)
+  const [sleep, food, habits, logs] = await Promise.all([
+    repo.listSleep(req.id, range.start.toISOString(), beforeEnd.toISOString()),
+    repo.listFood(req.id, range.start.toISOString(), beforeEnd.toISOString()),
+    repo.listHabits(req.id),
+    repo.listHabitLogs(req.id, range.startDate, range.endDate),
+  ])
+  const data = buildDailyAnalytics({ dates: range.dates, timeZone: range.timeZone, sleep, food, habits, logs })
+  return { days: range.dates.length, timeZone, ...data }
 })

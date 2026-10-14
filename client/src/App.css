@@ -59,3 +59,73 @@
 /* Keep navigation and the habit strip above the central orbital artwork and panels. */
 .experience .header{z-index:8}
 .experience .planet-list{z-index:7}
+
+/* Insights and administration panels share the existing glass-card language. */
+.experience[data-page="admin"] .planet-content{display:none}
+.experience[data-page="admin"] .admin-screen{inset:clamp(90px,12vh,130px) clamp(22px,3.5vw,54px) 28px}
+.nutrition-section,.habit-analytics-panel{padding:18px 20px;border:1px solid #ffffff38;border-radius:17px;background:#12151cd9;backdrop-filter:blur(24px) saturate(125%);box-shadow:0 14px 60px #0003;margin-bottom:12px}
+.insight-section-heading,.habit-analytics-heading,.admin-provider-panel>header,.admin-users-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.insight-section-heading h3,.habit-analytics-heading h3,.admin-screen h3{margin:0;font-size:17px;font-weight:400;letter-spacing:-.035em}
+.nutrition-date-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.past-day-picker{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:10px 12px;border:1px solid #ffffff25;border-radius:11px;background:#ffffff08;font-size:10px;color:#ffffffb8}
+.past-day-picker input,.admin-screen input,.admin-screen select,.habit-analytics-heading select{min-width:0;padding:9px 10px;border:1px solid #ffffff42;border-radius:9px;background:#ffffff12;color:#fff;font:inherit}
+.past-day-picker input{color-scheme:dark}
+.macro-summary{margin:14px 0 10px}
+.nutrition-status-note,.chart-footnote,.chart-unit-label,.admin-help{font-size:10px;color:#ffffffa9;line-height:1.55}
+.nutrition-entry-list{border-top:1px solid #ffffff22;margin-top:10px}
+.nutrition-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:8px 2px;border-bottom:1px solid #ffffff1c;font-size:10px}
+.nutrition-entry>div:first-child{min-width:0;display:grid;gap:4px}.nutrition-entry strong{overflow-wrap:anywhere;font-weight:500}.nutrition-entry small{font-size:9px;color:#ffffff9d}.nutrition-entry>span{white-space:nowrap;color:#ffffffd4}.nutrition-entry-state{display:flex;gap:9px;align-items:center;color:#ffffffa2;white-space:nowrap}
+.text-action{border:0;background:none;color:#fff;text-decoration:underline;font-size:10px;cursor:pointer}.text-action:disabled{opacity:.45}
+.chart-empty{padding:15px 0;font-size:11px;color:#ffffffad}.chart-tooltip{display:grid;gap:5px;padding:9px 11px;border:1px solid #ffffff38;border-radius:10px;background:#17191df2;color:#fff;font-size:10px;backdrop-filter:blur(16px)}
+.habit-analytics-heading{align-items:flex-end}.habit-analytics-heading label{display:grid;gap:6px;min-width:min(210px,48%);font-size:9px;color:#ffffffa8}.habit-analytics-heading select option,.admin-screen select option{background:#11141a;color:white}
+.habit-chart{height:190px}.heatmap-legend{display:flex;gap:14px;margin:16px 0 10px;font-size:9px;color:#ffffffb4}.heatmap-legend span{display:flex;align-items:center;gap:6px}.heatmap-dot{width:9px;height:9px;border:1px solid #ffffff65;border-radius:50%}.heatmap-dot.done{background:#fff}.habit-heatmap{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:6px}.heatmap-day{aspect-ratio:1;border:1px solid #ffffff45;border-radius:6px;background:#ffffff08;color:#ffffff9e;font-size:8px;cursor:pointer}.heatmap-day.completed{background:#f5f4ef;color:#111;border-color:#fff}.heatmap-day:hover{outline:1px solid #fff}
+.admin-intro{margin:0 0 16px}.admin-intro h2{font-size:clamp(24px,4vw,36px);font-weight:300;letter-spacing:-.05em;margin:4px 0}.admin-intro>p:last-child{font-size:10px;color:#ffffffa8;margin:5px 0}.admin-provider-panel header,.admin-users-heading{margin-bottom:12px}.provider-active{font-size:9px;color:#ffffffb0}.provider-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.provider-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border:1px solid #ffffff2b;border-radius:11px;background:#ffffff08;cursor:pointer}.provider-option strong,.provider-option small{display:block}.provider-option strong{font-size:11px}.provider-option small{margin-top:4px;font-size:9px;color:#ffffff9a}.provider-option input{accent-color:white}.admin-users-heading form{display:flex;gap:7px}.admin-users-heading form input{width:min(230px,45vw);font-size:10px}.admin-user-row{display:grid;grid-template-columns:minmax(0,1fr) 70px 100px 48px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid #ffffff22;font-size:10px}.admin-user-row>div{min-width:0}.admin-user-row strong,.admin-user-row small{display:block;overflow-wrap:anywhere}.admin-user-row small,.admin-user-row time{font-size:9px;color:#ffffffa0;margin-top:4px}.admin-user-role{text-transform:capitalize;color:#ffffffc4}.admin-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;font-size:9px;color:#ffffffa2}.admin-pagination>div{display:flex;gap:6px}.admin-error,.admin-notice{padding:10px 12px;border-radius:10px;font-size:10px;background:#b53d3d33;border:1px solid #ff8b8b55}.admin-notice{background:#449b7333;border-color:#8bffbe55}.admin-denied{position:absolute;top:30%;left:50%;transform:translateX(-50%);width:min(460px,90vw);font-size:12px}.admin-user-details{margin-top:12px;padding:13px;border:1px solid #ffffff30;border-radius:12px;background:#ffffff08}.admin-user-details>header{display:flex;justify-content:space-between;align-items:center;font-size:11px}.admin-user-details dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 0}.admin-user-details dl div{min-width:0}.admin-user-details dt{font-size:8px;color:#ffffff91}.admin-user-details dd{font-size:10px;margin:4px 0 0;overflow-wrap:anywhere}
+@media(max-width:700px){.experience[data-page="admin"] .admin-screen{inset:auto;margin:100px 13px 20px;width:auto;max-height:none;overflow:visible}.nutrition-section,.habit-analytics-panel{padding:14px}.insight-section-heading{align-items:flex-start}.insight-section-heading h3{font-size:15px}.nutrition-date-actions{gap:4px}.nutrition-date-actions .glass-button{padding:7px 8px;font-size:8px}.past-day-picker{align-items:stretch;flex-direction:column}.habit-analytics-heading{align-items:stretch;flex-direction:column}.habit-analytics-heading label{min-width:0}.habit-heatmap{grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}.provider-options{grid-template-columns:1fr}.admin-users-heading{align-items:stretch;flex-direction:column}.admin-users-heading form input{width:100%;flex:1}.admin-user-row{grid-template-columns:minmax(0,1fr) 42px 66px 37px;gap:5px;font-size:8px}.admin-user-row time{font-size:7px}.admin-user-row .text-action{font-size:8px;padding:0}.admin-pagination .glass-button{padding:7px 8px;font-size:8px}}
+
+/* Keep the desktop ritual list out of the title/facts area at compact widths. */
+@media(min-width:701px){
+  .experience[data-page="home"] .planet-list{top:clamp(145px,21vh,220px);transform:none;width:clamp(205px,22vw,270px);max-height:42vh;overflow:auto}
+  .experience[data-page="home"] .planet-content{z-index:5}
+}
+@media(min-width:701px) and (max-width:1000px){
+  .experience[data-page="home"] .planet-list{left:clamp(24px,4vw,42px);top:clamp(130px,18vh,165px);width:clamp(205px,27vw,245px);max-height:38vh;gap:6px}
+  .experience[data-page="home"] .portal-wrap{left:auto;right:5vw;top:42%;width:min(270px,32vw);transform:translateY(-50%)}
+  .experience[data-page="home"] .planet-content{left:clamp(25px,4vw,42px);right:clamp(25px,4vw,42px);bottom:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,.9fr);align-items:end;gap:18px}
+  .experience[data-page="home"] .planet-title-group{max-width:none;min-width:0}
+  .experience[data-page="home"] .planet-title-group h1{font-size:clamp(68px,10vw,104px);line-height:.82;overflow-wrap:normal}
+  .experience[data-page="home"] .planet-facts{width:auto;min-width:0;font-size:10px}
+  .experience[data-page="home"] .fact{grid-template-columns:76px minmax(0,1fr);gap:8px}
+}
+
+/* A contribution-style calendar: one compact cell per day, weekdays down. */
+.heatmap-layout{display:flex;align-items:flex-start;gap:7px;width:max-content;max-width:100%;overflow-x:auto;padding:4px 0 6px;scrollbar-width:thin}
+.heatmap-weekdays{display:grid;grid-template-rows:repeat(7,12px);gap:3px;flex:0 0 auto;color:#ffffff8e;font-size:7px;line-height:12px}
+.heatmap-weekdays span{width:22px}.heatmap-weekdays i{display:block}
+.habit-heatmap{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);grid-auto-columns:12px;gap:3px;width:max-content}
+.heatmap-day{position:relative;display:grid;place-items:center;width:12px;height:12px;min-width:12px;aspect-ratio:auto;padding:0;border:1px solid #ffffff35;border-radius:3px;background:#ffffff0a;color:transparent;font-size:0;cursor:pointer}
+.heatmap-day span{font-size:0}.heatmap-day.completed{border-color:#f5f4ef;background:#f5f4ef}.heatmap-day:hover,.heatmap-day:focus-visible{outline:1px solid #fff;outline-offset:1px}
+.heatmap-spacer{width:12px;height:12px}
+.experience[data-page="analysis"] .habit-analytics-panel{overflow:hidden}
+@media(min-width:701px){.experience[data-page="analysis"] .boolean-habit-panel{width:fit-content;max-width:100%}}
+@media(max-width:700px){.heatmap-weekdays{grid-template-rows:repeat(7,10px);gap:3px;line-height:10px}.habit-heatmap{grid-template-rows:repeat(7,10px);grid-auto-columns:10px;gap:3px}.heatmap-day,.heatmap-spacer{width:10px;height:10px;min-width:10px}.heatmap-weekdays span{width:20px}}
+
+/* Keep the compact boolean heatmap and its recorded-days summary aligned. */
+@media(min-width:900px){
+  .experience[data-page="analysis"] .habit-panels-row{display:grid;grid-template-columns:repeat(2,minmax(0,378px));align-items:start;gap:12px;width:max-content;max-width:100%}
+  .experience[data-page="analysis"] .habit-panels-row>.glass-panel{width:100%;min-width:0;box-sizing:border-box}
+}
+@media(max-width:899px){.experience[data-page="analysis"] .habit-panels-row{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:100%}}
+@media(min-width:701px){
+  .experience[data-page="analysis"] .boolean-habit-panel,
+  .experience[data-page="analysis"] .history-panel{width:min(100%,378px);box-sizing:border-box}
+  .experience[data-page="analysis"] .history-entry{grid-template-columns:minmax(0,1fr) auto 58px;gap:8px}
+  .experience[data-page="analysis"] .history-entry>div{display:grid;grid-template-columns:repeat(14,8px);gap:3px}
+  .experience[data-page="analysis"] .history-entry i{width:8px;height:8px;border-radius:2px}
+}
+@media(max-width:700px){
+  .experience[data-page="analysis"] .boolean-habit-panel,
+  .experience[data-page="analysis"] .history-panel{width:auto;box-sizing:border-box}
+  .experience[data-page="analysis"] .history-entry{grid-template-columns:minmax(60px,80px) minmax(0,1fr) 34px;gap:6px}
+  .experience[data-page="analysis"] .history-entry>div{display:grid;grid-template-columns:repeat(14,6px);gap:2px}
+  .experience[data-page="analysis"] .history-entry i{width:6px;height:6px;border-radius:2px}
+}

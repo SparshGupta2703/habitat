@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "echo \"No tests configured\""
+    "test": "node --test",
+    "bootstrap-admin": "node scripts/bootstrapAdmin.js"
   },
   "keywords": [],
   "author": "",

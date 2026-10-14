@@ -1,4 +1,5 @@
-import { loginUser, signupUser } from "../services/authService.js"
+import { completeAdminSetup, loginUser, signupUser } from "../services/authService.js"
+import protect from '../middlewares/authMiddleware.js'
 
 export const signup =async(req,res)=>{
  try{
@@ -39,3 +40,18 @@ export const login=async(req,res)=>{
       
    }
 }
+
+export const finishAdminSetup = [protect, async (req, res, next) => {
+   try {
+      const user = await completeAdminSetup(req.id, req.body.password)
+      res.json({ success: true, message: 'Administrator password updated.', data: { user } })
+   } catch (error) { next(error) }
+}]
+
+export const currentUser = [protect, (req, res) => res.json({ success: true, data: { user: {
+   userId: req.id,
+   userEmail: req.user.email,
+   userName: req.user.name,
+   role: req.user.role || 'user',
+   mustChangePassword: Boolean(req.user.mustChangePassword),
+} } })]

@@ -8,12 +8,15 @@ import sleepRoutes from './routes/sleepRoutes.js'
 import foodRoutes from './routes/foodRoutes.js'
 import habitRoutes from './routes/habitRoutes.js'
 import analyticsRoutes from './routes/analyticsRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 
 // Use the host's resolver by default (important on platforms like Render).
 // Override only when a custom resolver has been configured explicitly.
 const dnsServers = (process.env.DNS_SERVERS || '').split(',').map((server) => server.trim()).filter(Boolean)
 if (dnsServers.length) dns.setServers(dnsServers)
 
+process.env.MONGO_URI ||= process.env.MONGODB_URI
+process.env.JWT_SECRET ||= process.env.SESSION_SECRET
 const required = ['MONGO_URI', 'JWT_SECRET', 'PORT']
 const missing = required.filter((key) => !process.env[key]?.trim())
 if (missing.length) {
@@ -49,6 +52,7 @@ app.use('/api/sleep', sleepRoutes)
 app.use('/api/food', foodRoutes)
 app.use('/api/habits', habitRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/admin', adminRoutes)
 app.use((err, _req, res, _next) => {
   console.error('Request failed:', err.message)
   res.status(err.status || 500).json({ success: false, message: err.message || 'Something went wrong' })
